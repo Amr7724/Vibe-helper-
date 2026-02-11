@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  lastOpened  DateTime        @default(now())
+  files       FileNode[]
+  chats       ChatMessage[]
+  plans       Plan[]
+  knowledge   KnowledgeBase[]
+}
+
+model FileNode {
+  id        String    @id
+  projectId String
+  parentId  String?
+  name      String
+  type      String
+  path      String
+  content   String?
+  isOpen    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    FileNode? @relation("FileNodeChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children  FileNode[] @relation("FileNodeChildren")
+
+  @@index([projectId])
+  @@index([parentId])
+}
+
+model ChatMessage {
+  id        String   @id
+  projectId String
+  role      String
+  text      String
+  timestamp DateTime
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, timestamp])
+}
+
+model Plan {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model KnowledgeBase {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  content   String
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}

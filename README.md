@@ -2,19 +2,56 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Vibe Helper
 
-This contains everything you need to run your app locally.
+تطبيق React + Vite لإدارة مشاريع برمجية مع دردشة ذكاء اصطناعي، تنظيم الملفات، Knowledge Base، و Smart Clipboard.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1LXePvldjez3LxBnygZu9uk0BlZaX8goq
+## تحليل سريع للمشروع
 
-## Run Locally
+- **الواجهة الأمامية:** React + TypeScript.
+- **الخدمات:** تكامل Gemini API + Firebase Auth.
+- **التخزين المحلي:** IndexedDB (fallback).
+- **الخلفية:** Express + Prisma API لحفظ المشاريع، الملفات، المحادثات، و Knowledge Base.
 
-**Prerequisites:**  Node.js
+## المميزات المضافة/المكتملة
 
+- إنشاء وربط قاعدة بيانات Prisma (SQLite) محليًا عند عدم وجود قاعدة بيانات.
+- إصلاح حفظ شجرة الملفات في الـ backend (كان يوجد خلل يمنع حفظ الأبناء).
+- إضافة تنظيف تلقائي للملفات المحذوفة من المشروع عند الحفظ.
+- تفعيل إنشاء المشروع فعليًا عبر API بدل الاعتماد على بيانات مؤقتة فقط.
+- إضافة endpoint فحص صحة (`/api/health`).
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## التشغيل المحلي
+
+**المتطلبات:** Node.js 18+
+
+1. تثبيت الحزم:
+   ```bash
+   npm install
+   ```
+
+2. إنشاء قاعدة البيانات + توليد Prisma client:
+   ```bash
+   npm run db:generate
+   npm run db:push
+   ```
+
+3. تشغيل الـ backend:
+   ```bash
+   npm run backend
+   ```
+
+4. تشغيل الواجهة الأمامية (في Terminal آخر):
+   ```bash
+   npm run dev
+   ```
+
+5. (اختياري) إعداد Gemini API:
+   - أضف `GEMINI_API_KEY` في ملف `.env.local`.
+
+## ملاحظات قواعد البيانات
+
+- افتراضيًا سيتم إنشاء قاعدة محلية في:
+  - `prisma/dev.db`
+- يمكنك استخدام أي DB أخرى عبر متغير البيئة:
+  - `DATABASE_URL`
