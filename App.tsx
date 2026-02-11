@@ -13,7 +13,7 @@ import { Auth } from './components/Auth';
 import { LandingPage } from './components/LandingPage';
 import { ProjectsDashboard } from './components/ProjectsDashboard';
 import { createProjectChat, sendMessageToChat, analyzeFullProject } from './services/geminiService';
-import { saveProjectState, loadProjectState, saveChatHistory, loadChatHistory, saveProjectMetadata, getAllProjects, deleteProject } from './services/db';
+import { createProject, saveProjectState, loadProjectState, saveChatHistory, loadChatHistory, saveProjectMetadata, getAllProjects, deleteProject } from './services/db';
 import { auth } from './services/firebase';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { Chat } from '@google/genai';
@@ -167,14 +167,7 @@ const App: React.FC = () => {
   // --- Handlers ---
 
   const handleCreateProject = async (name: string) => {
-    const newProject: ProjectMetadata = {
-      id: crypto.randomUUID(),
-      name,
-      createdAt: new Date(),
-      lastOpened: new Date(),
-      stats: { filesCount: 0, chatsCount: 0, tasksCount: 0 }
-    };
-    await saveProjectMetadata(newProject);
+    const newProject = await createProject(name);
     setProjects(prev => [...prev, newProject]);
     setActiveProject(newProject);
   };
