@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Folder, FolderOpen, FileCode, FileText, ChevronRight, ChevronDown, 
   Image, FileJson, Database, Layout, Settings, FileSpreadsheet, 
-  FileAudio, FileVideo, Terminal, Box, GitBranch, Lock
+  FileAudio, FileVideo, Terminal, Box, GitBranch, Lock, Info, Coffee, Shield, Eye
 } from 'lucide-react';
 import { FileNode } from '../types';
 
@@ -20,8 +20,15 @@ const getFileIcon = (filename: string) => {
   
   // Specific full filenames
   if (lowerName === 'dockerfile') return <Box className="w-4 h-4 text-blue-400" />;
-  if (lowerName === 'package.json') return <FileJson className="w-4 h-4 text-red-400" />;
+  if (lowerName === 'package.json') return <FileJson className="w-4 h-4 text-green-500" />;
+  if (lowerName === 'package-lock.json' || lowerName === 'yarn.lock' || lowerName === 'pnpm-lock.yaml') return <Lock className="w-4 h-4 text-yellow-600" />;
+  if (lowerName === 'tsconfig.json' || lowerName === 'jsconfig.json') return <FileCode className="w-4 h-4 text-blue-500" />;
   if (lowerName.startsWith('.git')) return <GitBranch className="w-4 h-4 text-orange-400" />;
+  if (lowerName === '.env' || lowerName.startsWith('.env.')) return <Shield className="w-4 h-4 text-yellow-500" />;
+  if (lowerName === 'readme.md') return <Info className="w-4 h-4 text-blue-300" />;
+  if (lowerName === 'license' || lowerName === 'license.txt') return <FileText className="w-4 h-4 text-yellow-400" />;
+  if (lowerName.includes('eslint') || lowerName.includes('prettier')) return <Settings className="w-4 h-4 text-purple-400" />;
+  if (lowerName === 'vercel.json' || lowerName === 'netlify.toml') return <Settings className="w-4 h-4 text-white" />;
   
   switch (ext) {
     // Images
@@ -60,13 +67,14 @@ const getFileIcon = (filename: string) => {
     case 'vue':
     case 'svelte':
       return <FileCode className="w-4 h-4 text-green-500" />;
+    case 'java':
+      return <Coffee className="w-4 h-4 text-red-500" />;
       
     // Backend/System
     case 'py':
     case 'pyc':
     case 'ipynb':
       return <FileCode className="w-4 h-4 text-blue-300" />; // Python
-    case 'java':
     case 'jar':
     case 'class':
       return <FileCode className="w-4 h-4 text-red-500" />; // Java
@@ -142,7 +150,7 @@ const getFileIcon = (filename: string) => {
 
     // Text/Docs
     case 'md':
-      return <FileText className="w-4 h-4 text-blue-200" />;
+      return <Info className="w-4 h-4 text-blue-200" />;
     case 'txt':
     case 'log':
       return <FileText className="w-4 h-4 text-slate-400" />;

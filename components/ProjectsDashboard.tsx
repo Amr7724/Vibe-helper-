@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Folder, MessageSquare, ListTodo, MoreVertical, Zap, Clock, ArrowRight, Settings, Bell, Calendar } from 'lucide-react';
+import { Plus, Search, Folder, MessageSquare, ListTodo, MoreVertical, Zap, Clock, ArrowRight, Settings, Bell, Calendar, LogOut, User } from 'lucide-react';
 import { ProjectMetadata } from '../types';
 import { Button } from './Button';
 
@@ -8,13 +8,17 @@ interface ProjectsDashboardProps {
   onSelectProject: (project: ProjectMetadata) => void;
   onCreateProject: (name: string) => void;
   onDeleteProject: (id: string) => void;
+  user: { email: string | null } | null;
+  onSignOut: () => void;
 }
 
 export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({ 
   projects, 
   onSelectProject, 
   onCreateProject,
-  onDeleteProject
+  onDeleteProject,
+  user,
+  onSignOut
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
@@ -50,18 +54,27 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
          <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-14 h-14 rounded-full border-2 border-orange-500/50 p-1">
-                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Vitaliy" alt="User" className="w-full h-full rounded-full bg-white/10" />
+                 <img 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'default'}`} 
+                    alt="User" 
+                    className="w-full h-full rounded-full bg-white/10" 
+                 />
               </div>
               <div className="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 border-2 border-black rounded-full"></div>
             </div>
             <div>
                <p className="text-xs text-white/50">Good Day 👋</p>
-               <h2 className="text-xl font-bold">المطور الذكي</h2>
+               <h2 className="text-xl font-bold">{user?.email?.split('@')[0] || 'Developer'}</h2>
+               <p className="text-xs text-white/30">{user?.email}</p>
             </div>
          </div>
-         <div className="w-12 h-12 rounded-full glass-card flex items-center justify-center border border-white/10 hover:bg-white/10 cursor-pointer">
-            <Settings className="w-6 h-6 text-white/70" />
-         </div>
+         <button 
+            onClick={onSignOut}
+            className="w-12 h-12 rounded-full glass-card flex items-center justify-center border border-white/10 hover:bg-red-500/10 hover:border-red-500/30 cursor-pointer group transition-all"
+            title="Sign Out"
+         >
+            <LogOut className="w-6 h-6 text-white/70 group-hover:text-red-400" />
+         </button>
       </div>
 
       {/* Search Bar */}

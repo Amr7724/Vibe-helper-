@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Copy, Check, FileCode, Bot, Sparkles, Edit3, Eye, Save, Download } from 'lucide-react';
+import { Copy, Check, FileCode, Bot, Sparkles, Edit3, Eye, Save, Download, AlertCircle, XCircle, ArrowRight } from 'lucide-react';
 import { Button } from './Button';
 import { explainSqlCode } from '../services/geminiService';
 
@@ -8,13 +7,13 @@ interface SqlViewerProps {
   content: string;
   fileName: string;
   onContentChange?: (newContent: string) => void;
+  onBack?: () => void;
 }
 
 const SyntaxHighlighter: React.FC<{ code: string; fileName: string }> = React.memo(({ code, fileName }) => {
   const lines = useMemo(() => code.split('\n'), [code]);
   const isSql = fileName.toLowerCase().endsWith('.sql');
   
-  // Performance Guard for massive files
   if (lines.length > 20000) {
       return (
          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
@@ -28,7 +27,6 @@ const SyntaxHighlighter: React.FC<{ code: string; fileName: string }> = React.me
   const renderLine = (line: string) => {
     if (!line) return <span className="inline-block">&nbsp;</span>;
     
-    // For non-SQL files (like the extracted context), just return the line text to improve performance and readability
     if (!isSql) {
         return <span className="text-slate-300">{line}</span>;
     }
@@ -92,9 +90,10 @@ const SyntaxHighlighter: React.FC<{ code: string; fileName: string }> = React.me
   );
 });
 
-export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onContentChange }) => {
+export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onContentChange, onBack }) => {
   const [copied, setCopied] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -107,6 +106,10 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onConte
   }, [content]);
 
   useEffect(() => {
+    setAnalysis(null);
+    setError(null);
+    setShowAnalysis(false);
+
     const intervalId = setInterval(() => {
       if (contentRef.current) {
         localStorage.setItem(`autosave_${fileName}`, contentRef.current);
@@ -138,56 +141,86 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onConte
   };
 
   const handleAnalyze = async () => {
-    if (analysis) {
-      setShowAnalysis(!showAnalysis);
+    if (analysis && showAnalysis && !error) {
+      setShowAnalysis(false);
       return;
+    }
+    
+    if (analysis && !showAnalysis && !error) {
+        setShowAnalysis(true);
+        return;
     }
 
     setIsAnalyzing(true);
     setShowAnalysis(true);
-    const result = await explainSqlCode(content);
-    setAnalysis(result);
-    setIsAnalyzing(false);
+    setError(null);
+    
+    try {
+        const result = await explainSqlCode(content);
+        if (result.includes("حدث خطأ") || result.includes("عذراً") || result === "لم يتم استلام رد.") {
+            setError(result);
+            setAnalysis(null);
+        } else {
+            setAnalysis(result);
+        }
+    } catch (err) {
+        setError("حدث خطأ غير متوقع في النظام.");
+        setAnalysis(null);
+    } finally {
+        setIsAnalyzing(false);
+    }
   };
 
   return (
     <div className="flex flex-col h-full bg-white/5 backdrop-blur-lg md:rounded-xl shadow-xl border border-white/20 overflow-hidden">
-      {/* Header Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 bg-white/5 border-b border-white/10 flex-shrink-0 backdrop-blur-md">
         <div className="flex items-center gap-2 text-white font-semibold min-w-0">
-          <FileCode className="w-5 h-5 text-primary-400" />
+          <div className="md:hidden">
+             <Button variant="ghost" size="sm" onClick={onBack} icon={<ArrowRight className="w-5 h-5 rtl:rotate-180" />} className="!p-1.5" />
+          </div>
+          <FileCode className="w-5 h-5 text-primary-400 flex-shrink-0" />
           <div className="flex flex-col min-w-0">
-            <span className="truncate max-w-[150px] md:max-w-xs" dir="ltr">{fileName}</span>
+            <span className="truncate max-w-[120px] md:max-w-xs block" dir="ltr">{fileName}</span>
             {lastAutoSave && (
-              <span className="text-[10px] text-white/50 font-normal flex items-center gap-1">
+              <span className="text-[10px] text-white/50 font-normal hidden sm:flex items-center gap-1">
                 <Save className="w-3 h-3" />
-                تم الحفظ تلقائياً {lastAutoSave.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}
+                تم الحفظ {lastAutoSave.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}
               </span>
             )}
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
            <Button
              variant="ghost"
              size="sm"
              onClick={() => setIsEditing(!isEditing)}
              icon={isEditing ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
              title={isEditing ? "معاينة" : "تعديل"}
+             className="!px-2 md:!px-3"
            >
-             {isEditing ? 'معاينة' : 'تعديل'}
+             <span className="hidden md:inline">{isEditing ? 'معاينة' : 'تعديل'}</span>
            </Button>
 
            <Button 
-            variant="secondary" 
+            variant={error ? "danger" : "secondary"} 
             size="sm"
             onClick={handleAnalyze}
             disabled={isAnalyzing}
             className="hidden sm:flex"
-            icon={isAnalyzing ? <Sparkles className="animate-spin w-4 h-4" /> : <Bot className="w-4 h-4" />}
+            icon={isAnalyzing ? <Sparkles className="animate-spin w-4 h-4" /> : (error ? <AlertCircle className="w-4 h-4" /> : <Bot className="w-4 h-4" />)}
           >
-            {isAnalyzing ? 'جاري التحليل...' : (analysis ? (showAnalysis ? 'إخفاء التحليل' : 'عرض التحليل') : 'تحليل AI')}
+            {isAnalyzing ? 'جاري التحليل...' : (analysis && !error ? (showAnalysis ? 'إخفاء التحليل' : 'عرض التحليل') : 'تحليل AI')}
           </Button>
+          
+           <Button 
+            variant={error ? "danger" : "secondary"} 
+            size="sm"
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+            className="flex sm:hidden !px-2"
+            icon={isAnalyzing ? <Sparkles className="animate-spin w-4 h-4" /> : <Bot className="w-4 h-4" />}
+          />
 
           <Button 
             variant="secondary"
@@ -195,6 +228,7 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onConte
             onClick={handleDownload}
             icon={<Download className="w-4 h-4" />}
             title="تحميل الملف"
+            className="hidden md:flex"
           />
 
           <Button 
@@ -202,16 +236,14 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onConte
             onClick={handleCopy}
             icon={copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             size="sm"
+            className="!px-2 md:!px-3"
           >
-            {copied ? 'تم النسخ' : 'نسخ'}
+            <span className="hidden md:inline">{copied ? 'تم النسخ' : 'نسخ'}</span>
           </Button>
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="relative flex-1 overflow-hidden flex flex-col md:flex-row">
-        
-        {/* SQL Code View / Edit */}
         <div className={`flex-1 overflow-auto bg-black/40 text-slate-300 ${showAnalysis ? 'hidden md:block w-1/2' : 'w-full'}`} dir="ltr">
           {isEditing ? (
             <textarea
@@ -227,9 +259,16 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onConte
           )}
         </div>
 
-        {/* AI Analysis Panel */}
         {showAnalysis && (
-          <div className="flex-1 md:w-1/2 bg-white/10 backdrop-blur-2xl border-r border-white/10 overflow-auto p-6 md:border-r-0 md:border-l md:border-white/10">
+          <div className="flex-1 md:w-1/2 bg-white/10 backdrop-blur-2xl border-r border-white/10 overflow-auto p-6 md:border-r-0 md:border-l md:border-white/10 relative">
+             <button 
+                onClick={() => setShowAnalysis(false)} 
+                className="absolute top-4 left-4 p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-colors"
+                title="إغلاق التحليل"
+             >
+                <XCircle className="w-5 h-5" />
+             </button>
+
             <div className="flex items-center gap-2 mb-4 text-primary-300">
               <Sparkles className="w-6 h-6" />
               <h3 className="text-xl font-bold">تحليل الذكاء الاصطناعي</h3>
@@ -240,9 +279,21 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({ content, fileName, onConte
                 <div className="h-4 bg-white/10 rounded w-3/4"></div>
                 <div className="h-4 bg-white/10 rounded w-1/2"></div>
                 <div className="h-4 bg-white/10 rounded w-5/6"></div>
+                <div className="h-32 bg-white/5 rounded w-full mt-4"></div>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in-95 duration-300">
+                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                    <AlertCircle className="w-8 h-8 text-red-400" />
+                 </div>
+                 <h4 className="text-lg font-bold text-red-200 mb-2">فشل التحليل</h4>
+                 <p className="text-white/60 mb-6 max-w-xs leading-relaxed">{error}</p>
+                 <Button onClick={handleAnalyze} variant="primary" size="sm" icon={<Sparkles className="w-4 h-4"/>}>
+                    إعادة المحاولة
+                 </Button>
               </div>
             ) : (
-              <div className="prose prose-invert max-w-none text-white/90 leading-7 whitespace-pre-line">
+              <div className="prose prose-invert max-w-none text-white/90 leading-7 whitespace-pre-line animate-in fade-in slide-in-from-bottom-2 duration-500">
                 {analysis}
               </div>
             )}

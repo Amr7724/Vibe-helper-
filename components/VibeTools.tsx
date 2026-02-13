@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Lightbulb, GitMerge, Clipboard, Play, ExternalLink, Link as LinkIcon, FileText, Code, Video, List, CheckCircle, Circle, ArrowRight, Trash2, Copy, Sparkles, Filter, ChevronDown, GripVertical, Paperclip, Plus, Maximize2, X, Edit3, Save, Check } from 'lucide-react';
 import { Button } from './Button';
@@ -24,6 +23,28 @@ export const SmartClipboard: React.FC<{
   const [selectedItem, setSelectedItem] = useState<ClipboardItem | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+
+  // Auto-Save / Load from LocalStorage
+  useEffect(() => {
+    // Load on mount
+    const saved = localStorage.getItem('vibecode_clipboard_items');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Only populate if current items list is empty to avoid duplication on refresh if parent state isn't ready
+        if (Array.isArray(parsed) && items.length === 0) {
+            parsed.forEach(p => onAddItem({ ...p, timestamp: new Date(p.timestamp) }));
+        }
+      } catch (e) { console.error("LS Load error", e); }
+    }
+  }, []); // Run once on mount
+
+  useEffect(() => {
+    // Save when items change
+    if (items.length > 0) {
+      localStorage.setItem('vibecode_clipboard_items', JSON.stringify(items));
+    }
+  }, [items]);
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) return;
